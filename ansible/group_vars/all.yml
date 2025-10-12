@@ -1,0 +1,41 @@
+# ===================================================================
+# PostgreSQL Configuration
+# ===================================================================
+postgresql_install: true
+postgresql_version: "16"  # или "latest"
+postgresql_host: "192.168.10.10"  # IP сервера PostgreSQL
+postgresql_port: 5432
+postgres_password: "09876543"
+
+# Database settings
+postgresql_database_name: "nexusdb"
+postgresql_schema_name: "nexus"
+postgresql_user: "nexus"
+postgresql_user_password: "12345678"
+
+# PostgreSQL listen address (remote connect)
+postgresql_listen_addresses: "*"
+
+# ===================================================================
+# Nexus Configuration
+# ===================================================================
+nexus_version: "3.85.0-03"
+nexus_user: "nexus"
+nexus_install_dir: "/opt/nexus"
+nexus_work_dir: "/opt/sonatype-work/nexus3"
+
+# PostgreSQL integration for Nexus
+nexus_use_postgresql: true
+nexus_db_host: "{{ postgresql_host }}"
+nexus_db_port: "{{ postgresql_port }}"
+nexus_db_name: "{{ postgresql_database_name }}"
+nexus_db_schema: "{{ postgresql_schema_name }}"
+nexus_db_username: "{{ postgresql_user }}"
+nexus_db_password: "{{ postgresql_user_password }}"
+
+# JDBC URL для Nexus
+nexus_jdbc_url: "jdbc\\:postgresql\\://{{ nexus_db_host }}\\:{{ nexus_db_port }}/{{ nexus_db_name }}?currentSchema={{ nexus_db_schema }}"
+
+# Connection pool settings
+nexus_db_max_pool_size: 100
+nexus_db_max_lifetime: 1800000  # 30 минут в миллисекундах

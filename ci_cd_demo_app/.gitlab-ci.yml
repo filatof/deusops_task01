@@ -1,0 +1,176 @@
+stages:
+  - build
+  - deploy
+  - cleanup
+build:
+  stage: build
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind 
+      
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    IMAGE_NAME: "${CI_REGISTRY}/${CI_PROJECT_PATH}"
+    IMAGE_NEXUS: "${NEXUS_REGISTRY}/${CI_PROJECT_NAME}"
+    IMAGE_TAG: ""
+    # для работы с cgroups
+    DOCKER_BUILDKIT: 1
+  before_script:
+    - echo $NEXUS_PASS | docker login -u $NEXUS_USER $NEXUS_REGISTRY --password-stdin
+  script:
+    - IMAGE_TAG=${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}-$(date +%s)
+    - echo "IMAGE_TAG=$IMAGE_TAG" >> build.env  
+    - docker build -t $IMAGE_NEXUS:$IMAGE_TAG .
+    - docker push $IMAGE_NEXUS:$IMAGE_TAG
+  artifacts:
+    reports:
+      dotenv: build.env
+  tags:
+    - docker_run
+# branch dev
+.deploy_template:
+  stage: deploy
+  image: docker:24-git
+  variables:
+   DOCKER_HOST: "ssh://${SERVER_USER}@${SERVER_HOST}"
+  before_script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - echo $NEXUS_PASS | docker login -u $NEXUS_USER $NEXUS_REGISTRY --password-stdin
+  script:
+    - echo "Deploying IMAGE_TAG=$IMAGE_TAG"
+    - docker compose pull
+    - docker compose down --timeout=60 --remove-orphans
+    - docker compose up --build --detach
+    - docker image prune -f || true
+  tags:
+    - docker_run
+
+.stop_template:
+  stage: deploy
+  image: docker:24-git
+  variables:
+    DOCKER_HOST: "ssh://${SERVER_USER}@${SERVER_HOST_DEV}"
+    SERVER_HOST: $SERVER_HOST_DEV
+    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY_DEV
+  before_script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+  script:
+    - echo "Stopping development environment..."
+    - docker compose down --timeout=60 --remove-orphans --volumes
+    - docker system prune -af --volumes || true
+    - echo "Environment stopped"
+  tags:
+    - docker_run
+  
+deploy_dev:
+  extends: .deploy_template
+  variables:
+    SERVER_HOST: $SERVER_HOST_DEV
+    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY_DEV
+  only:
+    - dev
+  when: manual
+  environment:
+    name: development
+    url: https://dev.eqlan.ru
+    on_stop: stop_dev
+
+stop_dev:
+  extends: .stop_template
+  environment:
+    name: development
+    action: stop
+  only:
+    - dev
+  when: manual
+    
+deploy_prod:
+  extends: .deploy_template
+  variables:
+    SERVER_HOST: $SERVER_HOST_PROD
+    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY_PROD
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://prod.eqlan.ru
+    on_stop: stop_prod
+
+stop_prod:
+  extends: .stop_template
+  environment:
+    name: production
+    action: stop
+  only:
+    - main
+  when: manual
+   
+
+.cleanup_template:
+  stage: cleanup
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - |
+      echo "Cleaning up old images for ${CI_PROJECT_NAME}, branch: ${BRANCH_PREFIX}, keeping last ${KEEP_LAST_N}..."
+      
+      # Получаем все компоненты и фильтруем по тегу ветки
+      COMPONENTS=$(curl -s -u $NEXUS_USER:$NEXUS_PASS \
+        "https://nexus.eqlan.ru/service/rest/v1/components?repository=docker-hosted" \
+        | jq -r ".items[] | select(.name == \"${CI_PROJECT_NAME}\") | select(.version | startswith(\"${BRANCH_PREFIX}-\")) | {id: .id, version: .version, date: .assets[0].lastModified} | @json")
+      
+      # Сортируем по дате (последние сверху)
+      SORTED=$(echo "$COMPONENTS" | jq -s 'sort_by(.date) | reverse')
+      
+      # Считаем количество
+      TOTAL=$(echo "$SORTED" | jq 'length')
+      TO_KEEP=${KEEP_LAST_N}
+      
+      echo "Found $TOTAL images for branch '${BRANCH_PREFIX}'"
+      
+      if [ $TOTAL -gt $TO_KEEP ]; then
+        TO_DELETE=$((TOTAL - TO_KEEP))
+        echo "Will delete $TO_DELETE old images, keeping newest $TO_KEEP"
+        
+        # Удаляем старые (начиная с индекса TO_KEEP)
+        echo "$SORTED" | jq -r ".[$TO_KEEP:] | .[] | .id" | while read COMPONENT_ID; do
+          TAG=$(echo "$SORTED" | jq -r ".[] | select(.id == \"$COMPONENT_ID\") | .version")
+          echo "Deleting old image: $TAG (ID: $COMPONENT_ID)"
+          curl -s -u $NEXUS_USER:$NEXUS_PASS -X DELETE \
+            "https://nexus.eqlan.ru/service/rest/v1/components/$COMPONENT_ID" || true
+        done
+        echo "Cleanup completed!"
+      else
+        echo "Nothing to delete (total: $TOTAL, keep: $TO_KEEP)"
+      fi
+  allow_failure: true
+  tags:
+    - docker_run
+
+cleanup_after_dev:
+  extends: .cleanup_template
+  variables:
+    KEEP_LAST_N: 2
+    BRANCH_PREFIX: "dev"
+  needs: ["deploy_dev"]
+  only:
+    - dev
+
+cleanup_after_prod:
+  extends: .cleanup_template
+  variables:
+    KEEP_LAST_N: 2
+    BRANCH_PREFIX: "main"
+  needs: ["deploy_prod"]
+  only:
+    - main

@@ -1,0 +1,37 @@
+---
+# =====================================================================
+# PostgreSQL Server Setup
+# =====================================================================
+- name: Setup PostgreSQL Server
+  hosts: postgresql
+  become: true
+  roles:
+    - role: roles/ansible_proxmox_infra-role-postgresql
+      when: postgresql_install | default(false)
+# =====================================================================
+# Nexus Server Setup
+# =====================================================================
+- name: Setup Nexus Repository
+  hosts: nexus
+  become: true
+  roles:
+    - role: roles/ansible_proxmox_infra-role-nexus
+
+# =====================================================================
+# Runner Server Setup
+# =====================================================================
+- name: Setup Gitlab-runner
+  hosts: runner
+  become: true
+  roles:
+    - role: roles/ansible_proxmox_infra-role-runner
+    - role: roles/ansible_proxmox_infra-role-docker
+
+# =====================================================================
+# App server
+# =====================================================================
+- name: Setup application server
+  hosts: app
+  become: true
+  roles:
+    - role: roles/ansible_proxmox_infra-role-docker
