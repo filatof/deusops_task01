@@ -1,23 +1,8 @@
-;nexus01 ansible_host=192.168.1.121 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
-
-;runner01 ansible_host=192.168.1.122 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
-
-;app01 ansible_host=192.168.1.123 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
-
-;app02 ansible_host=192.168.1.124 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
-
-;nexus ansible_host=192.168.1.125 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
-
-;postgresql ansible_host=192.168.1.126 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
-
-
 
 nexus ansible_host=51.250.74.46 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3
 
 postgresql ansible_host=192.168.10.10 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3 ansible_ssh_common_args='-o ProxyJump=fill@51.250.74.46'
 
-app ansible_host=192.168.10.20 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3 ansible_ssh_common_args='-o ProxyJump=fill@51.250.79.157'
+app ansible_host=192.168.10.20 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3 ansible_ssh_common_args='-o ProxyJump=fill@158.160.63.95'
 
 runner ansible_host=192.168.10.30 ansible_user=fill ansible_port=22 ansible_ssh_private_key_file=~/.ssh/id_ed25519 ansible_python_interpreter=/usr/bin/python3 ansible_ssh_common_args='-o ProxyJump=fill@51.250.79.157'
-
-

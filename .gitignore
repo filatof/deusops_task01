@@ -113,3 +113,4 @@ yandex_infra/storage.key
 yandex_infra/key.json
 
 vagrant_infra/.vagrant
+yandex_infra/certs/*

@@ -24,7 +24,7 @@ resource "yandex_compute_instance" "nexus01" {
   }
 
   metadata = {
-    user-data = "${file("metafile.yaml")}"
+    user-data = local.cloud_init_config
     serial-port-enable     = "true"
     enable-monitoring-agent = "true"
   }

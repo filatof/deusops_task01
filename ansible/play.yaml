@@ -6,7 +6,7 @@
   hosts: postgresql
   become: true
   roles:
-    - role: roles/ansible_proxmox_infra-role-postgresql
+    - role: postgresql
       when: postgresql_install | default(false)
 # =====================================================================
 # Nexus Server Setup
@@ -15,7 +15,7 @@
   hosts: nexus
   become: true
   roles:
-    - role: roles/ansible_proxmox_infra-role-nexus
+    - role: nexus
 
 # =====================================================================
 # Runner Server Setup
@@ -24,8 +24,8 @@
   hosts: runner
   become: true
   roles:
-    - role: roles/ansible_proxmox_infra-role-runner
-    - role: roles/ansible_proxmox_infra-role-docker
+    - role: runner
+    - role: docker
 
 # =====================================================================
 # App server
@@ -34,4 +34,4 @@
   hosts: app
   become: true
   roles:
-    - role: roles/ansible_proxmox_infra-role-docker
+    - role: docker

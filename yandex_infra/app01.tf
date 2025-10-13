@@ -32,19 +32,17 @@ resource "yandex_compute_instance" "app01" {
 //
 // Create a new Compute Disk.
 //
-# resource "yandex_compute_image" "ubuntu_2204_app01" {
-#   source_family = "ubuntu-2204-lts"
-# }
-resource "yandex_compute_image" "debian_12" {
-  source_family = "debian-12"
+resource "yandex_compute_image" "ubuntu_2204_app01" {
+  source_family = "ubuntu-2204-lts"
 }
+
 
 resource "yandex_compute_disk" "disk_app01" {
   name     = "boot-disk-app01"
   type     = "network-hdd"
   zone     = "ru-central1-a"
   size     = "10"
-  image_id = yandex_compute_image.debian_12.id
+  image_id = yandex_compute_image.ubuntu_2204_app01.id
   labels = {
     environment = "app01"
   }
