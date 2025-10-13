@@ -38,9 +38,9 @@ locals {
   })
 }
 
-# 6. cloud-init конфигурация (используем данные из Certificate Manager)
+# cloud-init конфигурация (используем данные из Certificate Manager)
 locals {
-  cloud_init_config = templatefile("${path.module}/cloud-init.yaml", {
+    cloud_init_config = templatefile("${path.module}/cloud-init.yaml", {
     nginx_config_app = base64encode(local.nginx_config_app)
     nginx_config    = base64encode(local.nginx_config)
     ssl_certificate = base64encode(join("\n", data.yandex_cm_certificate_content.wildcard_cert_content.certificates))

@@ -26,8 +26,8 @@ build:
     reports:
       dotenv: build.env
   tags:
-    - docker_run
-# branch dev
+    - docker_runner
+
 .deploy_template:
   stage: deploy
   image: docker:24-git
@@ -47,7 +47,7 @@ build:
     - docker compose up --build --detach
     - docker image prune -f || true
   tags:
-    - docker_run
+    - docker_runner
 
 .stop_template:
   stage: deploy
@@ -68,19 +68,17 @@ build:
     - docker system prune -af --volumes || true
     - echo "Environment stopped"
   tags:
-    - docker_run
+    - docker_runner
   
-deploy_dev:
+deploy_app:
   extends: .deploy_template
   variables:
-    SERVER_HOST: $SERVER_HOST_DEV
-    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY_DEV
-  only:
-    - dev
+    SERVER_HOST: $SERVER_HOST
+    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY
   when: manual
   environment:
     name: development
-    url: https://dev.eqlan.ru
+    url: https://app.eqlan.online
     on_stop: stop_dev
 
 stop_dev:
@@ -88,32 +86,7 @@ stop_dev:
   environment:
     name: development
     action: stop
-  only:
-    - dev
   when: manual
-    
-deploy_prod:
-  extends: .deploy_template
-  variables:
-    SERVER_HOST: $SERVER_HOST_PROD
-    SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY_PROD
-  only:
-    - main
-  when: manual
-  environment:
-    name: production
-    url: https://prod.eqlan.ru
-    on_stop: stop_prod
-
-stop_prod:
-  extends: .stop_template
-  environment:
-    name: production
-    action: stop
-  only:
-    - main
-  when: manual
-   
 
 .cleanup_template:
   stage: cleanup
@@ -155,22 +128,12 @@ stop_prod:
       fi
   allow_failure: true
   tags:
-    - docker_run
+    - docker_runner
 
-cleanup_after_dev:
+cleanup_after:
   extends: .cleanup_template
   variables:
     KEEP_LAST_N: 2
     BRANCH_PREFIX: "dev"
   needs: ["deploy_dev"]
-  only:
-    - dev
 
-cleanup_after_prod:
-  extends: .cleanup_template
-  variables:
-    KEEP_LAST_N: 2
-    BRANCH_PREFIX: "main"
-  needs: ["deploy_prod"]
-  only:
-    - main
