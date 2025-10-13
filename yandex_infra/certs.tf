@@ -1,17 +1,29 @@
-resource "yandex_cm_certificate" "wildcard_cert" {
-  name        = "wildcard-eqlan-cert"
-  description = "Self-signed wildcard certificate for *.eqlan.online"
+# resource "yandex_cm_certificate" "wildcard_cert" {
+#   name        = "wildcard-eqlan-cert"
+#   description = "Self-signed wildcard certificate for *.eqlan.online"
+#
+#   self_managed {
+#     certificate = file("${path.module}/certs/wildcard.crt")
+#     private_key = file("${path.module}/certs/wildcard.key")
+#   }
+# }
 
-  self_managed {
-    certificate = file("${path.module}/certs/wildcard.crt")
-    private_key = file("${path.module}/certs/wildcard.key")
+# wildcard letsencrypt
+resource "yandex_cm_certificate" "wildcard_cert" {
+  name    = "wildcard-eqlan-online-cert"
+  domains = ["*.eqlan.online", "eqlan.online"]
+
+  managed {
+    challenge_type = "DNS_CNAME"
   }
 }
 
-# Получение содержимого сертификата для cloud-init или других ресурсов
 data "yandex_cm_certificate_content" "wildcard_cert_content" {
   certificate_id = yandex_cm_certificate.wildcard_cert.id
+
+  depends_on = [yandex_cm_certificate.wildcard_cert]
 }
+
 
 # 5. Подготовка конфигурации Nginx
 locals {
