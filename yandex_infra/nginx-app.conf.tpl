@@ -8,8 +8,8 @@ server {
     listen 443 ssl;
     server_name app.eqlan.online;
 
-    ssl_certificate /etc/acme/eqlan.online_ecc/wildcard.cer;
-    ssl_certificate_key /etc/acme/eqlan.online_ecc/wildcard.key;
+    ssl_certificate /etc/acme/eqlan.ru_ecc/wildcard.crt;
+    ssl_certificate_key /etc/acme/eqlan.ru_ecc/wildcard.key;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
